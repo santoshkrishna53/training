@@ -1,0 +1,39 @@
+steps:
+- name: 'node:lts-alpine3.12'
+  entrypoint: 'npm'
+  args: ['install']
+  dir: 'appdev'
+- name: 'node:lts-alpine3.12'
+  entrypoint: 'npm'
+  args: ['run','build']
+  dir: 'appdev'
+- name: 'gcr.io/cloud-builders/gcloud'
+  dir: 'app'
+  args: ['-q','app', 'deploy', 'app.yaml']
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/$PROJECT_ID/cloud_deploy:$COMMIT_SHA', '.']
+ # Push the container image to Container Registry
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'gcr.io/$PROJECT_ID/cloud_deploy:$COMMIT_SHA']
+ # Deploy container image to Cloud Run
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  entrypoint: gcloud
+  args:
+  - 'run'
+  - 'deploy'
+  - 'clouddeploy'
+  - '--image'
+  - 'gcr.io/$PROJECT_ID/cloud_deploy:$COMMIT_SHA'
+  - '--region'
+  - 'REGION'
+  - '--platform'
+  - 'managed'
+images:
+ - 'gcr.io/$PROJECT_ID/cloud_deploy:$COMMIT_SHA'
+
+timeout: "5000s"
+
+
+
+
+
